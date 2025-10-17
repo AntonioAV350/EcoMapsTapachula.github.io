@@ -1,0 +1,305 @@
+/* --- Estilos Minimalistas y Responsivos para EcoMaps --- */
+:root {
+    --bg-color: #F8F9FA;
+    --text-color: #2E4034;
+    --primary-color: #5E8C61; /* Verde principal */
+    --primary-light: #e8f5e9; /* Verde claro para fondos */
+    --border-color: #DCE1DE;
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased; /* Mejora la legibilidad del texto */
+}
+
+/* --- Pantalla de Bienvenida --- */
+.welcome-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+}
+
+.welcome-content {
+    max-width: 600px;
+}
+
+.planet-icon {
+    font-size: 5rem; /* Tamaño ajustado para móviles */
+    margin-bottom: 20px;
+    color: var(--primary-color);
+}
+
+.welcome-title {
+    font-size: 2.5rem; /* Tamaño base para móviles */
+    font-weight: 800;
+    color: var(--text-color);
+    margin-bottom: 15px;
+}
+
+.welcome-subtitle {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 40px;
+    padding: 0 10px; /* Evita que el texto toque los bordes en pantallas pequeñas */
+}
+
+.start-btn {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    padding: 16px 40px;
+    font-size: 1rem;
+    border-radius: 50px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.start-btn:hover {
+    background-color: #4a6f4c;
+    transform: translateY(-3px);
+}
+
+/* --- Aplicación Principal --- */
+.main-app {
+    min-height: 100vh;
+    position: relative;
+}
+
+.home-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: transparent;
+    color: var(--primary-color);
+    border: none;
+    padding: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 1000;
+    transition: color 0.3s ease;
+}
+
+.home-btn:hover {
+    color: var(--text-color);
+}
+
+.main-content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.app-logo {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-top: 40px;
+}
+
+.logo-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-color);
+}
+
+/* --- Filtros de Categoría (Clave para la responsividad) --- */
+.floating-categories-below {
+    display: flex;
+    flex-wrap: wrap; /* ¡Esta es la clave! Permite que los botones pasen a la siguiente línea */
+    gap: 10px;
+    justify-content: center;
+    margin: 20px 0 30px 0;
+}
+
+.floating-btn-below {
+    padding: 10px 20px;
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    color: var(--text-color);
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-grow: 1; /* Permite que los botones crezcan para ocupar espacio */
+    flex-basis: 120px; /* Define un tamaño base antes de crecer */
+    text-align: center;
+}
+
+.floating-btn-below:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.floating-btn-below.active {
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border-color: var(--primary-color);
+}
+
+/* --- Contenedor del Mapa --- */
+.map-container {
+    height: 60vh; /* Altura relativa para adaptarse mejor a diferentes pantallas */
+    max-height: 500px;
+    border-radius: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Navegación Inferior (Pestañas) --- */
+.nav-tabs {
+    background: #ffffff;
+    padding: 8px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    max-width: 300px;
+    margin: 0 auto 20px auto;
+}
+
+.nav-tab {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #6c757d;
+}
+
+.nav-tab.active {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+/* --- Sección de Recomendaciones Ambientales --- */
+#ambienteContent {
+    padding-top: 60px;
+}
+
+.env-section {
+    background: transparent;
+}
+
+.env-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.env-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.env-header p {
+    color: #6c757d;
+}
+
+.env-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Una sola columna en móviles */
+    gap: 20px;
+}
+
+.env-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 25px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.env-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.env-icon {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.env-card h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* --- Indicador de Carga --- */
+.loading {
+    display: none;
+    text-align: center;
+    padding: 40px;
+}
+
+.spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* --- Utilidades --- */
+.hidden {
+    display: none;
+}
+
+/* --- Media Queries para Responsividad --- */
+
+/* Estilos para tabletas (y móviles grandes en horizontal) */
+@media (min-width: 600px) {
+    .floating-btn-below {
+        flex-grow: 0; /* Evita que los botones crezcan demasiado en tabletas */
+    }
+
+    .env-grid {
+        grid-template-columns: repeat(2, 1fr); /* Dos columnas en tabletas */
+    }
+}
+
+/* Estilos para Escritorio */
+@media (min-width: 768px) {
+    .welcome-title {
+        font-size: 3rem; /* Título más grande en escritorio */
+    }
+    
+    .welcome-subtitle {
+        font-size: 1.1rem;
+    }
+
+    .logo-title {
+        font-size: 2rem;
+    }
+}
