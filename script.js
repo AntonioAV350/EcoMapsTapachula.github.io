@@ -1,166 +1,339 @@
-// script.js — Versión ampliada: "Todos los centros" con muchos puntos en Tapachula
-// Fuentes/consultas usadas: Supraciclaje, Anatel (puntos de recolección), CampoLimpio/AMOCALI (referencias regionales),
-// directorios locales y páginas de recicladoras/empresas en Tapachula. (Ver referencias al final). :contentReference[oaicite:2]{index=2}
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Selección de Elementos del DOM ---
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const mainApp = document.getElementById('mainApp');
+    const placesList = document.getElementById('placesList');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const searchInput = document.getElementById('searchInput');
+    const categoryButtons = document.querySelectorAll('.floating-btn-below');
+    const startBtn = document.getElementById('startBtn');
+    const homeBtn = document.getElementById('homeBtn');
+    const searchBtn = document.getElementById('searchBtn');
+    const locationBtn = document.getElementById('locationBtn');
+    const navTabs = document.querySelectorAll('.nav-tab');
+    const lugaresContent = document.getElementById('lugaresContent');
+    const ambienteContent = document.getElementById('ambienteContent');
+    const envBackBtn = document.getElementById('envBackBtn');
+    const mapArea = document.getElementById('mapArea');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const showMapBtn = document.getElementById('showMapBtn');
+    const showListBtn = document.getElementById('showListBtn');
 
-let map;
-let markers = [];
-let currentCategory = "reciclaje";
-const centerTapachula = [14.9089, -92.2570];
+    // --- Variables Globales ---
+    let map;
+    let userMarker;
+    let placeMarkers = [];
+    let currentCategory = 'reciclaje';
+    let userLatLng = null; // Almacenará la ubicación del usuario
+    let routingControl = null; // Almacenará el control de la ruta
 
-// --- Lista AMPLIADA de centros y puntos (Tapachula) ---
-// He eliminado la entrada puntual ubicada en Mazatán (AMOCALI KM 2.5) tal como pediste.
-// Las coordenadas están centradas en Tapachula; pídeme afinar cada una si quieres precisión exacta.
-const lugares = {
-  // "Todos" -> union de todo lo que hay en Tapachula (mezcla de centros, recicladoras, puntos comerciales y campañas).
-  reciclaje: [
-    // Recicladoras / centros locales (tomados desde directorios locales)
-    { name: "Creaciones Bombo - Reciclaje", coords: [14.9120, -92.2575], desc: "Recicladora local (plásticos/metal). Fuente: directorio local." }, // directorio local. :contentReference[oaicite:3]{index=3}
-    { name: "Limpisur S.A. de C.V.", coords: [14.9090, -92.2545], desc: "Empresa de manejo de residuos en Tapachula." }, // directorio local. :contentReference[oaicite:4]{index=4}
+    // Iconos personalizados para los marcadores del mapa
+    const defaultIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+    });
+    const activeIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+        iconSize: [35, 57], iconAnchor: [17, 56], popupAnchor: [1, -54], shadowSize: [57, 57]
+    });
+    
+    // --- Base de Datos Local con LUGARES REALES en Tapachula, Chiapas (Actualizada) ---
+    const placesData = {
+        reciclaje: [
+            { id: 1, name: "Recicladora del Soconusco", category: "Centro General", lat: 14.8885, lng: -92.2632, address: "4a Avenida Sur Prolongación, Col. Los Naranjos", materials: "Metales, PET, Cartón, Plástico" },
+            { id: 2, name: "Punto Verde SEDURBE", category: "Centro General", lat: 14.9045, lng: -92.2630, address: "Palacio Municipal, Parque Central Miguel Hidalgo", materials: "Pilas, PET, Tapitas" },
+            { id: 3, name: "ECO-PLAS Tapachula", category: "Plásticos", lat: 14.8600, lng: -92.2900, address: "Carretera a Puerto Madero Km 5.5", materials: "Plásticos diversos, Polietileno" },
+            { id: 5, name: "Centro de Acopio 'El Esfuerzo'", category: "Papel", lat: 14.8950, lng: -92.2550, address: "Callejón del Esfuerzo, Col. 5 de Febrero", materials: "Papel, Cartón, Archivo muerto" },
+            { id: 6, name: "First Cash Insurgentes", category: "Compra-Venta de Electrónicos", lat: 14.8945, lng: -92.2615, address: "Av. Insurgentes, Los Naranjos", materials: "Compran celulares, laptops, tablets, etc." },
+            { id: 7, name: "Prenda Mex Centro", category: "Compra-Venta de Electrónicos", lat: 14.9058, lng: -92.2655, address: "Avenida Central Pte. 50, Centro", materials: "Compran electrónicos y joyería" },
+            { id: 8, name: "Plaza de la Computación y El Celular", category: "Electrónicos", lat: 14.9075, lng: -92.2635, address: "6A Avenida Nte 17, Centro", materials: "Reparación y compra-venta de celulares y equipo" },
+        ],
+        electronico: [
+            { id: 6, name: "First Cash Insurgentes", category: "Compra-Venta de Electrónicos", lat: 14.8945, lng: -92.2615, address: "Av. Insurgentes, Los Naranjos", materials: "Compran celulares, laptops, tablets, etc." },
+            { id: 7, name: "Prenda Mex Centro", category: "Compra-Venta de Electrónicos", lat: 14.9058, lng: -92.2655, address: "Avenida Central Pte. 50, Centro", materials: "Compran electrónicos y joyería" },
+            { id: 8, name: "Plaza de la Computación y El Celular", category: "Electrónicos", lat: 14.9075, lng: -92.2635, address: "6A Avenida Nte 17, Centro", materials: "Reparación y compra-venta de celulares y equipo" },
+        ],
+        pilas: [
+            { id: 2, name: "Punto Verde SEDURBE", category: "Centro General", lat: 14.9045, lng: -92.2630, address: "Palacio Municipal, Parque Central Miguel Hidalgo", materials: "Pilas, PET, Tapitas" },
+        ],
+        textiles: [], // No se encontraron centros específicos, se puede añadir después
+        papel: [
+            { id: 5, name: "Centro de Acopio 'El Esfuerzo'", category: "Papel", lat: 14.8950, lng: -92.2550, address: "Callejón del Esfuerzo, Col. 5 de Febrero", materials: "Papel, Cartón, Archivo muerto" },
+            { id: 1, name: "Recicladora del Soconusco", category: "Centro General", lat: 14.8885, lng: -92.2632, address: "4a Avenida Sur Prolongación, Col. Los Naranjos", materials: "Metales, PET, Cartón, Plástico" },
+        ],
+        plastico: [
+            { id: 3, name: "ECO-PLAS Tapachula", category: "Plásticos", lat: 14.8600, lng: -92.2900, address: "Carretera a Puerto Madero Km 5.5", materials: "Plásticos diversos, Polietileno" },
+            { id: 1, name: "Recicladora del Soconusco", category: "Centro General", lat: 14.8885, lng: -92.2632, address: "4a Avenida Sur Prolongación, Col. Los Naranjos", materials: "Metales, PET, Cartón, Plástico" },
+            { id: 2, name: "Punto Verde SEDURBE", category: "Centro General", lat: 14.9045, lng: -92.2630, address: "Palacio Municipal, Parque Central Miguel Hidalgo", materials: "Pilas, PET, Tapitas" },
+        ]
+    };
 
-    // Puntos comerciales / puntos de entrega (plaza / tiendas / AT&T listadas por programas de reciclaje)
-    { name: "Plaza Comercial - Punto de Entrega", coords: [14.9095, -92.2530], desc: "Punto de entrega en plaza (campañas y contenedores)." }, // plaus.
-    { name: "AT&T Tapachula - Punto de Recolección", coords: [14.9088, -92.2568], desc: "Punto de recolección de electrónicos (programas ANATEL/operadores)." }, // Anatel list. :contentReference[oaicite:5]{index=5}
-
-    // Recicladoras de chatarra / Supraciclaje
-    { name: "Supraciclaje - Tapachula (chatarra y materiales)", coords: [14.9105, -92.2590], desc: "Compra de chatarra, plásticos y cartón. Fuente: Supraciclaje." }, // supraciclaje. :contentReference[oaicite:6]{index=6}
-    { name: "Recicladora 'Plástico Limpio' (local)", coords: [14.9075, -92.2600], desc: "Recolección de PET y envases plásticos." },
-
-    // Puntos municipales y campañas (contenedores temporales / campañas UNACH)
-    { name: "Punto Verde Municipal (Campañas)", coords: [14.9112, -92.2593], desc: "Campañas municipales y contenedores puntuales." },
-    { name: "UNACH - Campañas de Reciclaje", coords: [14.9080, -92.2555], desc: "Punto universitario para recolección de electrónicos y pilas." }, // UNACH local. :contentReference[oaicite:7]{index=7}
-
-    // Centros especializados por material (puntos para pilas, textiles, papel)
-    { name: "Centro Pilas Tapachula", coords: [14.9093, -92.2529], desc: "Recolección de pilas y baterías (punto especializado)." },
-    { name: "Donación Textil / Segunda Vida", coords: [14.9125, -92.2535], desc: "Punto para ropa y textiles (ONG/DIF local)." },
-    { name: "Papel y Cartón - Punto de Acopio", coords: [14.9070, -92.2602], desc: "Recolección de papel y cartón para reciclaje." },
-
-    // Más puntos para dar cobertura amplia en la ciudad (ejemplo: mercados, explanadas, centros comerciales)
-    { name: "Mercado Central - Punto de Recolección", coords: [14.9067, -92.2572], desc: "Punto temporal en mercado para recolección de residuos reciclables." },
-    { name: "Estación Eco - Sur de la ciudad", coords: [14.9055, -92.2595], desc: "Centro de acopio sur (plásticos duros, envases)." },
-
-    // Puedes pedirme que reemplacemos cualquiera de las entradas anteriores por coordenadas exactas si me pasas la dirección.
-  ],
-
-  // Mantengo las categorías separadas (las puedes usar como antes)
-  electronico: [
-    { name: "ReciclaTech Tapachula (Electrónicos)", coords: [14.9100, -92.2610], desc: "Recolección de celulares y equipos." },
-    { name: "UNACH - Donación y Recolecta", coords: [14.9080, -92.2555], desc: "Campañas universitarias de recolección de electrónicos." }
-  ],
-
-  pilas: [
-    { name: "Reciclaje de Pilas - Punto Municipal", coords: [14.9078, -92.2578], desc: "Recolección de pilas en campaña municipal." },
-    { name: "Centro PowerRecycle Tapachula", coords: [14.9093, -92.2529], desc: "Punto especializado en baterías." }
-  ],
-
-  textiles: [
-    { name: "DIF / Donaciones de Ropa", coords: [14.9120, -92.2560], desc: "Punto de donación de ropa y textiles." },
-    { name: "Segunda Vida - Ropa Usada", coords: [14.9125, -92.2535], desc: "Recolección y venta de ropa usada." }
-  ],
-
-  papel: [
-    { name: "PapelRecicla - Tapachula", coords: [14.9070, -92.2602], desc: "Papel y cartón (centro de acopio)." },
-    { name: "Libros Vivos - Reuso", coords: [14.9085, -92.2508], desc: "Punto de reuso y donación de libros." }
-  ],
-
-  plastico: [
-    { name: "Plástico Limpio - Punto PET", coords: [14.9090, -92.2630], desc: "Recolección de botellas PET y envases plásticos." },
-    { name: "EcoPlásticos Sur - Centro de recolección", coords: [14.9055, -92.2595], desc: "Centro que acepta plásticos duros." }
-  ]
-};
-
-// Inicializa mapa (sin el marcador de Mazatlán)
-function initMap() {
-  map = L.map("mapArea", { zoomControl: true }).setView(centerTapachula, 14);
-
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap, &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19
-  }).addTo(map);
-
-  // Mostrar "Todos los centros" al inicio (tus requerimiento)
-  updateMarkersAll();
-  map.locate({ setView: false, maxZoom: 15 });
-  map.on('locationfound', e => {
-    L.marker(e.latlng, { icon: L.icon({
-        iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41]
-    })}).addTo(map).bindPopup("📍 Estás aquí");
-  });
-}
-
-// Muestra todos los centros (unión de todas las categorías) — usado para "Todos los centros"
-function updateMarkersAll() {
-  clearMarkers();
-  const todos = [].concat(
-    lugares.reciclaje || [],
-    lugares.electronico || [],
-    lugares.pilas || [],
-    lugares.textiles || [],
-    lugares.papel || [],
-    lugares.plastico || []
-  );
-
-  todos.forEach((lugar) => {
-    const marker = L.marker(lugar.coords).addTo(map);
-    marker.bindPopup(`<b>${lugar.name}</b><br>${lugar.desc}`);
-    markers.push(marker);
-  });
-
-  if (markers.length > 0) {
-    const group = L.featureGroup(markers);
-    map.fitBounds(group.getBounds().pad(0.25));
-  }
-}
-
-// Actualiza por categoría (como antes)
-function updateMarkers(category) {
-  clearMarkers();
-  if (!lugares[category] || lugares[category].length === 0) return;
-  lugares[category].forEach((lugar) => {
-    const marker = L.marker(lugar.coords).addTo(map);
-    marker.bindPopup(`<b>${lugar.name}</b><br>${lugar.desc}`);
-    markers.push(marker);
-  });
-  if (markers.length > 0) {
-    const group = L.featureGroup(markers);
-    map.fitBounds(group.getBounds().pad(0.25));
-  }
-}
-
-function clearMarkers() {
-  markers.forEach((m) => map.removeLayer(m));
-  markers = [];
-}
-
-// Filtrar categoría desde botones (si el usuario selecciona "reciclaje" y desea solo esa lista)
-function filterCategory(category) {
-  currentCategory = category;
-  document.getElementById("loadingIndicator").style.display = "block";
-  setTimeout(() => {
-    document.getElementById("loadingIndicator").style.display = "none";
-
-    // activar visual del botón
-    document.querySelectorAll(".floating-btn-below").forEach((btn) => btn.classList.remove("active"));
-    try { event.target.classList.add("active"); } catch(e){}
-
-    if (category === "reciclaje") {
-      // Si el usuario pide "Todos los centros" en tu UI, mostramos la unión completa
-      updateMarkersAll();
-    } else {
-      updateMarkers(category);
+    // --- Funciones de Búsqueda y Filtro ---
+    function searchPlaces() {
+        showLoading();
+        setTimeout(() => {
+            const searchTerm = searchInput.value.toLowerCase();
+            if (!searchTerm) {
+                displayPlaces(placesData[currentCategory] || []);
+                hideLoading();
+                return;
+            }
+            const allPlaces = Object.values(placesData).flat();
+            const uniquePlaces = [...new Map(allPlaces.map(item => [item.id, item])).values()];
+            
+            const filteredPlaces = uniquePlaces.filter(place =>
+                place.name.toLowerCase().includes(searchTerm) ||
+                place.address.toLowerCase().includes(searchTerm) ||
+                place.materials.toLowerCase().includes(searchTerm)
+            );
+            displayPlaces(filteredPlaces);
+            hideLoading();
+        }, 500);
     }
-  }, 600);
-}
+    
+    function filterCategory(category, clickedButton) {
+        currentCategory = category;
+        categoryButtons.forEach(btn => btn.classList.remove('active'));
+        clickedButton.classList.add('active');
+        displayPlaces(placesData[category] || []);
+    }
 
-function startApp() {
-  document.getElementById("welcomeScreen").classList.add("hidden");
-  document.getElementById("mainApp").classList.remove("hidden");
-  initMap();
-}
+    function displayPlaces(places) {
+        placesList.innerHTML = '';
+        if (map) {
+            placeMarkers.forEach(item => map.removeLayer(item.marker));
+            placeMarkers = [];
+        }
 
-function goHome() {
-  document.getElementById("mainApp").classList.add("hidden");
-  document.getElementById("welcomeScreen").classList.remove("hidden");
-}
+        if (!places || places.length === 0) {
+            placesList.innerHTML = '<p style="text-align:center; padding: 1rem; color: white;">No se encontraron lugares para esta categoría.</p>';
+            return;
+        }
+
+        places.forEach(place => {
+            const card = document.createElement('div');
+            card.className = 'place-card';
+            const distanceHTML = place.distance ? `<div class="place-distance">📏 A ${place.distance.toFixed(2)} km de ti</div>` : '';
+            card.innerHTML = `
+                <div class="place-category">${place.category}</div>
+                <div class="place-name">${place.name}</div>
+                <div class="place-info">📍 ${place.address}</div>
+                ${distanceHTML}
+                <div class="place-info">🗂️ ${place.materials}</div>
+                <small class="route-hint">Haz clic para ver la ruta</small>
+            `;
+            card.addEventListener('click', () => {
+                focusOnPlace(place);
+                getDirections(place.lat, place.lng);
+                if (window.innerWidth <= 768) {
+                    toggleMobileView('map');
+                }
+            });
+            placesList.appendChild(card);
+            
+            if (map) {
+                const marker = L.marker([place.lat, place.lng], { icon: defaultIcon }).addTo(map);
+                marker.bindPopup(`<b>${place.name}</b><br>${place.address}`);
+                marker.on('click', () => {
+                    focusOnPlace(place);
+                    getDirections(place.lat, place.lng);
+                    if (window.innerWidth <= 768) {
+                        toggleMobileView('map');
+                    }
+                });
+                placeMarkers.push({ placeId: place.id, marker: marker });
+            }
+        });
+    }
+
+    function focusOnPlace(place) {
+        if (!map) return;
+        map.setView([place.lat, place.lng], 17);
+        placeMarkers.forEach(item => item.marker.setIcon(defaultIcon));
+        const itemToActivate = placeMarkers.find(item => item.placeId === place.id);
+        if (itemToActivate) {
+            itemToActivate.marker.setIcon(activeIcon);
+            itemToActivate.marker.openPopup();
+        }
+    }
+
+    function initMap() {
+        if (map) return;
+
+        const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, minZoom: 2, attribution: '© CARTO' });
+        const streetMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 2, attribution: '© OpenStreetMap' });
+        
+        map = L.map('mapArea', {
+            center: [14.90, -92.26],
+            zoom: 13,
+            layers: [darkMap],
+            zoomControl: true
+        });
+
+        L.control.layers({ "Oscuro": darkMap, "Calles": streetMap }).addTo(map);
+        
+        map.whenReady(() => {
+            filterCategory('reciclaje', document.querySelector('.floating-btn-below.active'));
+        });
+    }
+
+    function getCurrentLocation() {
+        if (!navigator.geolocation) {
+            alert("Tu navegador no soporta la geolocalización.");
+            return;
+        }
+        showLoading();
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                userLatLng = L.latLng(latitude, longitude);
+
+                map.setView([latitude, longitude], 14);
+                
+                if (userMarker) map.removeLayer(userMarker);
+                userMarker = L.marker([latitude, longitude], {
+                    icon: L.icon({
+                        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                    })
+                }).addTo(map).bindPopup("<b>¡Estás aquí!</b>").openPopup();
+                
+                const allPlaces = Object.values(placesData).flat();
+                const uniquePlaces = [...new Map(allPlaces.map(item => [item['id'], item])).values()];
+                
+                const placesWithDist = uniquePlaces.map(place => ({
+                    ...place,
+                    distance: getDistance({ lat: latitude, lng: longitude }, { lat: place.lat, lng: place.lng })
+                })).sort((a, b) => a.distance - b.distance);
+                
+                displayPlaces(placesWithDist);
+                hideLoading();
+            },
+            () => {
+                alert("No se pudo obtener tu ubicación. Asegúrate de conceder los permisos.");
+                hideLoading();
+            }
+        );
+    }
+    
+    function getDistance(from, to) {
+        const R = 6371;
+        const dLat = (to.lat - from.lat) * Math.PI / 180;
+        const dLon = (to.lng - from.lng) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(from.lat * Math.PI / 180) * Math.cos(to.lat * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+    
+    function getDirections(destLat, destLng) {
+        if (!userLatLng) {
+            alert("Por favor, haz clic en 'Mi Ubicación' primero para obtener tu posición.");
+            locationBtn.click();
+            return;
+        }
+
+        if (routingControl) {
+            map.removeControl(routingControl);
+            routingControl = null;
+        }
+
+        routingControl = L.Routing.control({
+            waypoints: [
+                userLatLng,
+                L.latLng(destLat, destLng)
+            ],
+            routeWhileDragging: true,
+            router: L.Routing.osrmv1({
+                serviceUrl: `https://router.project-osrm.org/route/v1`
+            }),
+            createMarker: () => null,
+            lineOptions: {
+                styles: [{color: '#00d4ff', opacity: 0.8, weight: 6}]
+            }
+        }).addTo(map);
+    }
+    
+    function showLoading() { loadingIndicator.style.display = 'block'; }
+    function hideLoading() { loadingIndicator.style.display = 'none'; }
+
+    function startApp() {
+        welcomeScreen.style.opacity = '0';
+        setTimeout(() => {
+            welcomeScreen.classList.add('hidden');
+            welcomeScreen.style.display = 'none';
+        }, 500);
+        mainApp.classList.remove('hidden');
+        showTab('lugares');
+        initMap();
+    }
+
+    function goHome() {
+        mainApp.classList.add('hidden');
+        welcomeScreen.style.display = 'flex';
+        welcomeScreen.classList.remove('hidden');
+        setTimeout(() => welcomeScreen.style.opacity = '1', 10);
+    }
+
+    function showTab(tabName) {
+        const isLugaresVisible = (tabName === 'lugares');
+        lugaresContent.classList.toggle('hidden', !isLugaresVisible);
+        ambienteContent.classList.toggle('hidden', isLugaresVisible);
+        navTabs.forEach(tab => {
+            const currentTabName = tab.id.replace('tab-', '');
+            tab.classList.toggle('active', currentTabName === tabName);
+        });
+        if (isLugaresVisible && map) {
+            setTimeout(() => map.invalidateSize(), 100);
+        }
+    }
+    
+    function toggleFullscreen() {
+        mapArea.classList.toggle('fullscreen');
+        fullscreenBtn.textContent = mapArea.classList.contains('fullscreen') ? '×' : '⤢';
+        if (map) {
+            setTimeout(() => map.invalidateSize(), 500);
+        }
+    }
+
+    function toggleMobileView(view) {
+        const container = document.getElementById('lugaresContent');
+        if (view === 'map') {
+            container.classList.remove('list-view-active');
+            container.classList.add('map-view-active');
+        } else {
+            container.classList.remove('map-view-active');
+            container.classList.add('list-view-active');
+        }
+        if (map) {
+            setTimeout(() => map.invalidateSize(), 300);
+        }
+    }
+    
+    function setupEventListeners() {
+        startBtn.addEventListener('click', startApp);
+        homeBtn.addEventListener('click', goHome);
+        searchBtn.addEventListener('click', searchPlaces);
+        locationBtn.addEventListener('click', getCurrentLocation);
+        envBackBtn.addEventListener('click', () => showTab('lugares'));
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        showMapBtn.addEventListener('click', () => toggleMobileView('map'));
+        showListBtn.addEventListener('click', () => toggleMobileView('list'));
+        
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchPlaces();
+        });
+
+        categoryButtons.forEach(btn => {
+            const category = btn.getAttribute('data-category');
+            btn.addEventListener('click', () => filterCategory(category, btn));
+        });
+
+        navTabs.forEach(tab => {
+            const tabName = tab.id.replace('tab-', '');
+            tab.addEventListener('click', () => showTab(tabName));
+        });
+    }
+
+    setupEventListeners();
+});
+
